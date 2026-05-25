@@ -94,8 +94,8 @@ export default function CartDrawer() {
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/27822531954?text=${encodedMessage}`;
       
-      // Open WhatsApp in a new tab
-      window.open(whatsappUrl, '_blank');
+      // Redirect directly to bypass popup blockers after async operations
+      window.location.href = whatsappUrl;
 
       setOrderSuccess(true);
       clearCart();
