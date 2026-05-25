@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Product, Order } from '@/types';
-import { Loader2, Package, CheckCircle, Clock, XCircle, Truck } from 'lucide-react';
+import { Loader2, Package, CheckCircle, Clock, XCircle, Truck, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -12,28 +12,23 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
+  const [newProduct, setNewProduct] = useState({
+    name: '', category: 'vegetable', description: '', image_url: '', price_per_unit: '', unit_type: '1kg', bulk_price: ''
+  });
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch products
-      const { data: productsData, error: pError } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
-      
+      const { data: productsData, error: pError } = await supabase.from('products').select('*').order('name');
       if (!pError && productsData) setProducts(productsData);
 
-      // Fetch orders
       const { data: ordersData, error: oError } = await supabase
         .from('orders')
-        .select(`
-          *,
-          profiles ( business_name, contact_name, phone )
-        `)
+        .select(`*, profiles ( business_name, contact_name, phone )`)
         .order('created_at', { ascending: false });
         
       if (!oError && ordersData) setOrders(ordersData as any[]);
-
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
@@ -47,19 +42,11 @@ export default function AdminDashboard() {
 
   const toggleStock = async (productId: string, currentStatus: boolean) => {
     try {
-      // Optimistic update
       setProducts(products.map(p => p.id === productId ? { ...p, in_stock: !currentStatus } : p));
-      
-      const { error } = await supabase
-        .from('products')
-        .update({ in_stock: !currentStatus })
-        .eq('id', productId);
-        
+      const { error } = await supabase.from('products').update({ in_stock: !currentStatus }).eq('id', productId);
       if (error) throw error;
       toast.success('Stock status updated');
     } catch (error) {
-      console.error('Error updating stock:', error);
-      // Revert on error
       setProducts(products.map(p => p.id === productId ? { ...p, in_stock: currentStatus } : p));
       toast.error('Failed to update stock status.');
     }
@@ -68,18 +55,59 @@ export default function AdminDashboard() {
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
       setOrders(orders.map(o => o.id === orderId ? { ...o, status } : o));
-      
-      const { error } = await supabase
-        .from('orders')
-        .update({ status })
-        .eq('id', orderId);
-        
+      const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
       if (error) throw error;
       toast.success('Order status updated');
     } catch (error) {
-      console.error('Error updating order:', error);
-      fetchData(); // Reload on error
+      fetchData();
       toast.error('Failed to update order status.');
+    }
+  };
+
+  const handleClearOrder = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to permanently clear this order?')) return;
+    
+    try {
+      // Delete items first (foreign key constraint)
+      await supabase.from('order_items').delete().eq('order_id', orderId);
+      
+      // Delete order
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (error) throw error;
+      
+      setOrders(orders.filter(o => o.id !== orderId));
+      toast.success('Order cleared successfully');
+    } catch (error: any) {
+      console.error('Error clearing order:', error);
+      toast.error('Failed to clear order.');
+    }
+  };
+
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingProduct(true);
+    try {
+      const { data, error } = await supabase.from('products').insert([{
+        name: newProduct.name,
+        category: newProduct.category,
+        description: newProduct.description,
+        image_url: newProduct.image_url || null,
+        price_per_unit: Number(newProduct.price_per_unit),
+        unit_type: newProduct.unit_type,
+        bulk_price: newProduct.bulk_price ? Number(newProduct.bulk_price) : null,
+        in_stock: true
+      }]).select().single();
+
+      if (error) throw error;
+      
+      toast.success('Product added successfully!');
+      setProducts([...products, data]);
+      setNewProduct({ name: '', category: 'vegetable', description: '', image_url: '', price_per_unit: '', unit_type: '1kg', bulk_price: '' });
+    } catch (error: any) {
+      console.error('Error adding product:', error);
+      toast.error(`Failed to add product: ${error.message}`);
+    } finally {
+      setIsAddingProduct(false);
     }
   };
 
@@ -156,16 +184,25 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <select 
-                            value={order.status}
-                            onChange={(e) => updateOrderStatus(order.id, e.target.value as any)}
-                            className="bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 ml-auto"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="dispatched">Dispatched</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
+                          <div className="flex items-center justify-end gap-2">
+                            <select 
+                              value={order.status}
+                              onChange={(e) => updateOrderStatus(order.id, e.target.value as any)}
+                              className="bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="dispatched">Dispatched</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                            <button
+                              onClick={() => handleClearOrder(order.id)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Clear Order"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -176,38 +213,81 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Right Col: Inventory */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-gray-900">Inventory Status</h2>
+        {/* Right Col: Inventory & Add Product */}
+        <div className="space-y-8">
+          
+          {/* Add Product Form */}
+          <div className="bg-white shadow-sm rounded-xl border border-gray-100 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Plus size={20} className="text-emerald-600" /> Add New Product
+            </h2>
+            <form onSubmit={handleAddProduct} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                <input required type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g. Red Apples" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                  <select value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="vegetable">Vegetable</option>
+                    <option value="fruit">Fruit</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Unit Type</label>
+                  <input required type="text" value={newProduct.unit_type} onChange={e => setNewProduct({...newProduct, unit_type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g. 1kg box" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Price (R)</label>
+                  <input required type="number" step="0.01" value={newProduct.price_per_unit} onChange={e => setNewProduct({...newProduct, price_per_unit: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="15.00" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Bulk Price (R)</label>
+                  <input type="number" step="0.01" value={newProduct.bulk_price} onChange={e => setNewProduct({...newProduct, bulk_price: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Optional" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Image URL</label>
+                <input type="text" value={newProduct.image_url} onChange={e => setNewProduct({...newProduct, image_url: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="/images/my-image.png or https://..." />
+              </div>
+              <button disabled={isAddingProduct} type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-sm transition-colors flex justify-center disabled:opacity-70">
+                {isAddingProduct ? <Loader2 className="animate-spin" size={20} /> : 'Save Product'}
+              </button>
+            </form>
           </div>
 
-          <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
-            {products.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">No products found.</div>
-            ) : (
-              products.map((product) => (
-                <div key={product.id} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                  <div>
-                    <h3 className="font-medium text-gray-900 line-clamp-1">{product.name}</h3>
-                    <p className="text-xs text-gray-500">R{product.price_per_unit.toFixed(2)} / {product.unit_type}</p>
-                  </div>
-                  
-                  <button
-                    onClick={() => toggleStock(product.id, product.in_stock)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
-                      product.in_stock ? 'bg-emerald-500' : 'bg-gray-200'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        product.in_stock ? 'translate-x-6' : 'translate-x-1'
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900">Inventory Status</h2>
+            <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+              {products.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">No products found.</div>
+              ) : (
+                products.map((product) => (
+                  <div key={product.id} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                    <div>
+                      <h3 className="font-medium text-gray-900 line-clamp-1">{product.name}</h3>
+                      <p className="text-xs text-gray-500">R{product.price_per_unit.toFixed(2)} / {product.unit_type}</p>
+                    </div>
+                    
+                    <button
+                      onClick={() => toggleStock(product.id, product.in_stock)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+                        product.in_stock ? 'bg-emerald-500' : 'bg-gray-200'
                       }`}
-                    />
-                  </button>
-                </div>
-              ))
-            )}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          product.in_stock ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
