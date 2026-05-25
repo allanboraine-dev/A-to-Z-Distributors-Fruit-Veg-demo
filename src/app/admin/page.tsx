@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Product, Order } from '@/types';
-import { Loader2, Package, CheckCircle, Clock, XCircle, Truck, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Package, CheckCircle, Clock, XCircle, Truck, Plus, Trash2, Edit2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -16,6 +16,26 @@ export default function AdminDashboard() {
     name: '', category: 'vegetable', description: '', image_url: '', price_per_unit: '', unit_type: '1kg', bulk_price: ''
   });
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+
+  const startEditProduct = (product: Product) => {
+    setEditingProductId(product.id);
+    setNewProduct({
+      name: product.name,
+      category: product.category,
+      description: product.description || '',
+      image_url: product.image_url || '',
+      price_per_unit: product.price_per_unit.toString(),
+      unit_type: product.unit_type,
+      bulk_price: product.bulk_price ? product.bulk_price.toString() : ''
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingProductId(null);
+    setNewProduct({ name: '', category: 'vegetable', description: '', image_url: '', price_per_unit: '', unit_type: '1kg', bulk_price: '' });
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -83,29 +103,39 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAddProduct = async (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAddingProduct(true);
-    try {
-      const { data, error } = await supabase.from('products').insert([{
-        name: newProduct.name,
-        category: newProduct.category,
-        description: newProduct.description,
-        image_url: newProduct.image_url || null,
-        price_per_unit: Number(newProduct.price_per_unit),
-        unit_type: newProduct.unit_type,
-        bulk_price: newProduct.bulk_price ? Number(newProduct.bulk_price) : null,
-        in_stock: true
-      }]).select().single();
+    
+    const payload = {
+      name: newProduct.name,
+      category: newProduct.category,
+      description: newProduct.description,
+      image_url: newProduct.image_url || null,
+      price_per_unit: Number(newProduct.price_per_unit),
+      unit_type: newProduct.unit_type,
+      bulk_price: newProduct.bulk_price ? Number(newProduct.bulk_price) : null,
+    };
 
-      if (error) throw error;
+    try {
+      if (editingProductId) {
+        // Update existing product
+        const { error } = await supabase.from('products').update(payload).eq('id', editingProductId);
+        if (error) throw error;
+        toast.success('Product updated successfully!');
+      } else {
+        // Insert new product
+        const { error } = await supabase.from('products').insert([{ ...payload, in_stock: true }]);
+        if (error) throw error;
+        toast.success('Product added successfully!');
+      }
       
-      toast.success('Product added successfully!');
-      setProducts([...products, data]);
-      setNewProduct({ name: '', category: 'vegetable', description: '', image_url: '', price_per_unit: '', unit_type: '1kg', bulk_price: '' });
+      // Refresh inventory and reset form
+      fetchData();
+      cancelEdit();
     } catch (error: any) {
-      console.error('Error adding product:', error);
-      toast.error(`Failed to add product: ${error.message}`);
+      console.error('Error saving product:', error);
+      toast.error(`Failed to save product: ${error.message}`);
     } finally {
       setIsAddingProduct(false);
     }
@@ -216,12 +246,12 @@ export default function AdminDashboard() {
         {/* Right Col: Inventory & Add Product */}
         <div className="space-y-8">
           
-          {/* Add Product Form */}
+          {/* Add/Edit Product Form */}
           <div className="bg-white shadow-sm rounded-xl border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Plus size={20} className="text-emerald-600" /> Add New Product
+              {editingProductId ? <><Edit2 size={20} className="text-blue-600" /> Edit Product</> : <><Plus size={20} className="text-emerald-600" /> Add New Product</>}
             </h2>
-            <form onSubmit={handleAddProduct} className="space-y-4">
+            <form onSubmit={handleSaveProduct} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
                 <input required type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g. Red Apples" />
@@ -253,9 +283,16 @@ export default function AdminDashboard() {
                 <label className="block text-xs font-medium text-gray-700 mb-1">Image URL</label>
                 <input type="text" value={newProduct.image_url} onChange={e => setNewProduct({...newProduct, image_url: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="/images/my-image.png or https://..." />
               </div>
-              <button disabled={isAddingProduct} type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-sm transition-colors flex justify-center disabled:opacity-70">
-                {isAddingProduct ? <Loader2 className="animate-spin" size={20} /> : 'Save Product'}
-              </button>
+              <div className="flex gap-2">
+                <button disabled={isAddingProduct} type="submit" className={`flex-1 ${editingProductId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white font-medium py-2 rounded-lg text-sm transition-colors flex justify-center disabled:opacity-70`}>
+                  {isAddingProduct ? <Loader2 className="animate-spin" size={20} /> : (editingProductId ? 'Update Product' : 'Save Product')}
+                </button>
+                {editingProductId && (
+                  <button type="button" onClick={cancelEdit} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors">
+                    Cancel
+                  </button>
+                )}
+              </div>
             </form>
           </div>
 
@@ -266,24 +303,33 @@ export default function AdminDashboard() {
                 <div className="p-8 text-center text-gray-500">No products found.</div>
               ) : (
                 products.map((product) => (
-                  <div key={product.id} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                  <div key={product.id} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0">
                     <div>
                       <h3 className="font-medium text-gray-900 line-clamp-1">{product.name}</h3>
                       <p className="text-xs text-gray-500">R{product.price_per_unit.toFixed(2)} / {product.unit_type}</p>
                     </div>
                     
-                    <button
-                      onClick={() => toggleStock(product.id, product.in_stock)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
-                        product.in_stock ? 'bg-emerald-500' : 'bg-gray-200'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          product.in_stock ? 'translate-x-6' : 'translate-x-1'
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => startEditProduct(product)}
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
+                        title="Edit Product"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => toggleStock(product.id, product.in_stock)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+                          product.in_stock ? 'bg-emerald-500' : 'bg-gray-200'
                         }`}
-                      />
-                    </button>
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            product.in_stock ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
