@@ -109,7 +109,7 @@ export default function LoginPage() {
               required={!isLogin}
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-black focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
               placeholder="e.g. Fresh Foods Market"
             />
           </div>
@@ -122,7 +122,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-black focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
             placeholder="you@company.com"
           />
         </div>
@@ -134,7 +134,7 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-black focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
             placeholder="••••••••"
           />
         </div>
