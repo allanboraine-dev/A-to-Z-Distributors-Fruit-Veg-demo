@@ -30,7 +30,7 @@ export default function CartDrawer() {
       // Check if profile exists, and if not, create it
       const { data: profile, error: profileCheckError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, business_name')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -38,14 +38,14 @@ export default function CartDrawer() {
         console.error('Error checking profile:', profileCheckError);
       }
 
+      let currentBusinessName = profile?.business_name || user.user_metadata?.business_name || user.email?.split('@')[0] || 'Valued Customer';
+
       if (!profile) {
-        // Fetch user metadata for business name if available
-        const businessName = user.user_metadata?.business_name || user.email?.split('@')[0] || 'Valued Customer';
         const { error: insertProfileError } = await supabase
           .from('profiles')
           .insert({
             id: user.id,
-            business_name: businessName,
+            business_name: currentBusinessName,
             role: 'customer'
           });
         if (insertProfileError) {
@@ -79,6 +79,23 @@ export default function CartDrawer() {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // Generate WhatsApp Message
+      let message = `*New Wholesale Order*\n`;
+      message += `From: ${currentBusinessName}\n`;
+      message += `Order ID: #${orderData.id.slice(0, 8)}\n\n`;
+      message += `*Items:*\n`;
+      cart.forEach(item => {
+        const price = item.bulk_price && item.quantity >= 10 ? item.bulk_price : item.price_per_unit;
+        message += `- ${item.quantity}x ${item.name} (R${price.toFixed(2)})\n`;
+      });
+      message += `\n*Total: R${cartTotal.toFixed(2)}*`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/27822531954?text=${encodedMessage}`;
+      
+      // Open WhatsApp in a new tab
+      window.open(whatsappUrl, '_blank');
 
       setOrderSuccess(true);
       clearCart();
