@@ -51,28 +51,32 @@ export default async function Home() {
 
   return (
     <div className="space-y-12">
-      {/* Hero Section */}
-      <div className="relative w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-2xl group">
-        <Image
-          src="/hero-storefront.jpg"
-          alt="A to Z Distributors Storefront"
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/60 to-transparent flex items-center">
-          <div className="p-8 md:p-12 lg:p-16 max-w-2xl text-white">
-            <span className="inline-block py-1 px-3 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-semibold tracking-wider uppercase mb-4 border border-emerald-500/30">
+      <div className="relative w-full flex flex-col md:block md:h-[500px] rounded-3xl overflow-hidden bg-gray-950 group">
+        {/* Image Section: Aspect ratio on mobile, absolute full-cover on desktop */}
+        <div className="relative w-full aspect-[21/9] md:absolute md:inset-0 overflow-hidden">
+          <Image
+            src="/hero-storefront.jpg"
+            alt="A to Z Distributors Storefront"
+            fill
+            className="object-cover md:object-cover animate-[slowPan_20s_ease-in-out_infinite]"
+            priority
+          />
+        </div>
+
+        {/* Text Content Section: Flows below image on mobile, overlays on desktop */}
+        <div className="relative md:absolute inset-0 md:bg-gradient-to-r md:from-gray-950/95 md:via-gray-900/80 md:to-transparent flex flex-col justify-end md:justify-center p-6 sm:p-8 md:p-12 lg:p-16 text-white z-10">
+          <div className="max-w-2xl">
+            <span className="inline-block py-1 px-3 rounded-full bg-emerald-500/20 text-emerald-300 text-xs sm:text-sm font-semibold tracking-wider uppercase mb-3 sm:mb-4 border border-emerald-500/30">
               Wholesale Fruit & Veg
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3 sm:mb-4 leading-tight">
               A to Z Distributors
             </h1>
-            <p className="text-lg md:text-xl text-gray-300 mb-8 font-light max-w-lg">
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 font-light max-w-lg">
               We supply happiness, while stocks lasts... Fresh, high-quality produce for your business.
             </p>
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl font-semibold shadow-lg shadow-emerald-600/30">
+            <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
+              <div className="bg-emerald-600 text-white px-6 sm:px-8 py-3 rounded-xl font-semibold shadow-lg shadow-emerald-600/30 w-full sm:w-auto text-center cursor-pointer hover:bg-emerald-500 transition-colors">
                 Order Online
               </div>
               <div className="px-6 py-3.5 rounded-xl font-medium text-gray-300 bg-white/5 border border-white/10 backdrop-blur-sm">
