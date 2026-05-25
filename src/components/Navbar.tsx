@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCart, Menu, LogOut, User } from 'lucide-react';
+import { ShoppingCart, Menu, X, LogOut, User } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 export default function Navbar() {
   const { cart, setIsCartOpen } = useCart();
   const [user, setUser] = useState<any>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -43,8 +44,11 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
-            <button className="p-2 -ml-2 text-gray-500 hover:text-gray-900 md:hidden">
-              <Menu size={24} />
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 -ml-2 text-gray-500 hover:text-gray-900 md:hidden"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <Link href="/" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center border border-gray-100 shadow-sm relative">
@@ -95,6 +99,37 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden py-4 border-t border-gray-100 flex flex-col gap-4 animate-in slide-in-from-top-2 duration-200">
+            {user ? (
+              <>
+                <Link href="/orders" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 text-base font-medium text-gray-700 hover:text-emerald-600 transition-colors">
+                  My Orders
+                </Link>
+                <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 text-base font-medium text-gray-700 hover:text-emerald-600 transition-colors">
+                  Admin Panel
+                </Link>
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-2 text-base font-medium text-gray-700 hover:text-emerald-600 transition-colors text-left w-full"
+                >
+                  <LogOut size={18} />
+                  Log out
+                </button>
+              </>
+            ) : (
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 px-2 text-base font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
+                <User size={18} />
+                Log In or Register
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   );
