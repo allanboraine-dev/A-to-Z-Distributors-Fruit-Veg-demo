@@ -114,7 +114,7 @@ export default function RootLayout({
 
             </div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-sm text-center text-gray-500">
-              © {new Date().getFullYear()} A to Z Distributors Fruit and Veg. All rights reserved. MVP Demo.
+              © {new Date().getFullYear()} A to Z Distributors Fruit and Veg. All rights reserved. MVP Demo by Boraine Tech.
             </div>
           </footer>
         </CartProvider>
