@@ -9,9 +9,10 @@ import toast from 'react-hot-toast';
 
 interface ProductCardProps {
   product: Product;
+  badge?: string;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, badge }: ProductCardProps) {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
 
@@ -33,10 +34,15 @@ export default function ProductCard({ product }: ProductCardProps) {
           className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         {!product.in_stock && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
             <span className="bg-red-500 text-white px-3 py-1 rounded-full font-medium text-sm">
               Out of Stock
             </span>
+          </div>
+        )}
+        {badge && (
+          <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1.5 rounded-full font-bold text-xs shadow-lg shadow-orange-500/30 border border-white/20 animate-[pulse_3s_ease-in-out_infinite]">
+            {badge}
           </div>
         )}
       </div>

@@ -15,6 +15,14 @@ const mockProducts: Product[] = [
   { id: '8', name: 'Oranges (Navel)', category: 'fruit', description: 'Juicy, sweet navel oranges.', image_url: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=800&q=80', price_per_unit: 28.00, unit_type: 'box', bulk_price: 25.00, in_stock: true },
 ];
 
+// Weekly Specials mock data
+const mockSpecials: Product[] = [
+  { id: 's1', name: 'Tray of Eggs (30 Large)', category: 'other', description: 'Farm fresh large eggs.', image_url: 'https://images.unsplash.com/photo-1587486913049-53fc88980fdc?w=800&q=80', price_per_unit: 85.00, unit_type: 'tray', bulk_price: 80.00, in_stock: true },
+  { id: 's2', name: 'Sunflower Cooking Oil', category: 'other', description: 'Pure sunflower cooking oil, 5L.', image_url: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&q=80', price_per_unit: 145.00, unit_type: '5L bottle', bulk_price: 135.00, in_stock: true },
+  { id: 's3', name: 'Super Maize Meal', category: 'other', description: 'Premium super maize meal.', image_url: 'https://images.unsplash.com/photo-1596647185072-9b2401f11cb2?w=800&q=80', price_per_unit: 95.00, unit_type: '10kg bag', bulk_price: 89.00, in_stock: true },
+  { id: 's4', name: 'White Sugar', category: 'other', description: 'Refined white sugar.', image_url: 'https://images.unsplash.com/photo-1621317585090-eec96eb15112?w=800&q=80', price_per_unit: 45.00, unit_type: '2.5kg bag', bulk_price: 42.00, in_stock: true },
+];
+
 export const revalidate = 60; // Revalidate every minute
 
 // Image fallback map for broken Unsplash URLs
@@ -84,6 +92,25 @@ export default async function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Weekly Specials Dashboard Section */}
+      <div id="specials" className="bg-gradient-to-br from-amber-50 to-orange-50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-12 rounded-3xl border border-amber-100 shadow-[inset_0_0_20px_rgba(251,191,36,0.1)] mb-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-amber-900 flex items-center gap-2">
+              🔥 Weekly Specials
+            </h2>
+            <p className="mt-2 text-amber-700/80 font-medium">
+              Grab these essentials at unbeatable prices!
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {mockSpecials.map((product) => (
+            <ProductCard key={product.id} product={product} badge="Wow Special!" />
+          ))}
         </div>
       </div>
 
