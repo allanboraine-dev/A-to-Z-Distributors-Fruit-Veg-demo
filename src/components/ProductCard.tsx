@@ -22,15 +22,15 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300 flex flex-col h-full">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col h-full group">
       {/* Image Container with strict Next.js Image rules */}
-      <div className="relative w-full aspect-square bg-gray-50">
+      <div className="relative w-full aspect-square bg-gray-50 overflow-hidden">
         <Image
           src={product.image_url || 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800'}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         {!product.in_stock && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -86,7 +86,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <button
             onClick={handleAdd}
             disabled={!product.in_stock}
-            className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-emerald-600 hover:to-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart size={18} />
             Add

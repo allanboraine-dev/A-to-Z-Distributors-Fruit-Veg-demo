@@ -65,18 +65,18 @@ export default async function Home() {
 
         {/* Text Content Section: Flows below image on mobile, overlays on desktop */}
         <div className="relative md:absolute inset-0 md:bg-gradient-to-r md:from-gray-950/95 md:via-gray-900/80 md:to-transparent flex flex-col justify-end md:justify-center p-6 sm:p-8 md:p-12 lg:p-16 text-white z-10">
-          <div className="max-w-2xl">
+          <div className="max-w-2xl bg-gray-950/40 md:bg-transparent backdrop-blur-md md:backdrop-blur-none p-6 md:p-0 rounded-2xl md:rounded-none border border-white/10 md:border-none shadow-2xl md:shadow-none -mt-16 md:mt-0 relative z-20">
             <span className="inline-block py-1 px-3 rounded-full bg-emerald-500/20 text-emerald-300 text-xs sm:text-sm font-semibold tracking-wider uppercase mb-3 sm:mb-4 border border-emerald-500/30">
               Wholesale Fruit & Veg
             </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3 sm:mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3 sm:mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-emerald-100 to-emerald-400">
               A to Z Distributors
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 font-light max-w-lg">
+            <p className="text-base sm:text-lg md:text-xl text-gray-200 mb-6 sm:mb-8 font-light max-w-lg">
               We supply happiness, while stocks lasts... Fresh, high-quality produce for your business.
             </p>
             <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
-              <div className="bg-emerald-600 text-white px-6 sm:px-8 py-3 rounded-xl font-semibold shadow-lg shadow-emerald-600/30 w-full sm:w-auto text-center cursor-pointer hover:bg-emerald-500 transition-colors">
+              <div className="relative overflow-hidden bg-emerald-600 text-white px-6 sm:px-8 py-3 rounded-xl font-semibold shadow-[0_0_20px_rgba(5,150,105,0.4)] w-full sm:w-auto text-center cursor-pointer hover:bg-emerald-500 hover:shadow-[0_0_30px_rgba(5,150,105,0.6)] transition-all duration-300 group before:absolute before:inset-0 before:-translate-x-full hover:before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent">
                 Order Online
               </div>
               <div className="px-6 py-3.5 rounded-xl font-medium text-gray-300 bg-white/5 border border-white/10 backdrop-blur-sm">
