@@ -7,21 +7,21 @@ import { Product } from '@/types';
 // Fallback seed data in case Supabase is not yet connected
 const mockProducts: Product[] = [
   { id: '1', name: 'Bulk Potatoes', category: 'vegetable', description: 'Premium quality bulk potatoes perfect for mashing, roasting, or frying.', image_url: '/images/bulk-potatoes.png', price_per_unit: 12.50, unit_type: '10kg bag', bulk_price: 11.00, in_stock: true },
-  { id: '2', name: 'Tomatoes (Class 1)', category: 'vegetable', description: 'Fresh, red, vine-ripened tomatoes. Great for salads and sauces.', image_url: 'https://images.unsplash.com/photo-1561136594-7f68413baa99?w=800&q=80', price_per_unit: 25.00, unit_type: 'box', bulk_price: 22.50, in_stock: true },
+  { id: '2', name: 'Tomatoes (Class 1)', category: 'vegetable', description: 'Fresh, red, vine-ripened tomatoes. Great for salads and sauces.', image_url: '/images/tomatoes.png', price_per_unit: 25.00, unit_type: 'box', bulk_price: 22.50, in_stock: true },
   { id: '3', name: 'White Onions', category: 'vegetable', description: 'Large white onions, essential for any kitchen base.', image_url: '/images/white-onions.png', price_per_unit: 15.00, unit_type: '10kg bag', bulk_price: 13.50, in_stock: true },
-  { id: '4', name: 'Bananas', category: 'fruit', description: 'Sweet and perfectly ripe yellow bananas.', image_url: 'https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=800&q=80', price_per_unit: 18.00, unit_type: 'box', bulk_price: 16.00, in_stock: true },
+  { id: '4', name: 'Bananas', category: 'fruit', description: 'Sweet and perfectly ripe yellow bananas.', image_url: '/images/bananas.png', price_per_unit: 18.00, unit_type: 'box', bulk_price: 16.00, in_stock: true },
   { id: '5', name: 'Granny Smith Apples', category: 'fruit', description: 'Crisp, tart green apples.', image_url: '/images/granny-smith-apples.png', price_per_unit: 35.00, unit_type: 'box', bulk_price: 32.00, in_stock: true },
-  { id: '6', name: 'Carrots', category: 'vegetable', description: 'Freshly harvested crunchy orange carrots.', image_url: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=800&q=80', price_per_unit: 14.00, unit_type: '10kg bag', bulk_price: 12.00, in_stock: true },
+  { id: '6', name: 'Carrots', category: 'vegetable', description: 'Freshly harvested crunchy orange carrots.', image_url: '/images/carrots.png', price_per_unit: 14.00, unit_type: '10kg bag', bulk_price: 12.00, in_stock: true },
   { id: '7', name: 'Lettuce (Iceberg)', category: 'vegetable', description: 'Crisp heads of iceberg lettuce.', image_url: '/images/iceberg-lettuce.png', price_per_unit: 12.00, unit_type: 'box', bulk_price: 10.00, in_stock: true },
-  { id: '8', name: 'Oranges (Navel)', category: 'fruit', description: 'Juicy, sweet navel oranges.', image_url: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=800&q=80', price_per_unit: 28.00, unit_type: 'box', bulk_price: 25.00, in_stock: true },
+  { id: '8', name: 'Oranges (Navel)', category: 'fruit', description: 'Juicy, sweet navel oranges.', image_url: '/images/oranges.png', price_per_unit: 28.00, unit_type: 'box', bulk_price: 25.00, in_stock: true },
 ];
 
 // Weekly Specials mock data
 const mockSpecials: Product[] = [
-  { id: 's1', name: 'Tray of Eggs (30 Large)', category: 'other', description: 'Farm fresh large eggs.', image_url: 'https://images.unsplash.com/photo-1587486913049-53fc88980fdc?w=800&q=80', price_per_unit: 85.00, unit_type: 'tray', bulk_price: 80.00, in_stock: true },
-  { id: 's2', name: 'Sunflower Cooking Oil', category: 'other', description: 'Pure sunflower cooking oil, 5L.', image_url: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&q=80', price_per_unit: 145.00, unit_type: '5L bottle', bulk_price: 135.00, in_stock: true },
-  { id: 's3', name: 'Super Maize Meal', category: 'other', description: 'Premium super maize meal.', image_url: 'https://images.unsplash.com/photo-1596647185072-9b2401f11cb2?w=800&q=80', price_per_unit: 95.00, unit_type: '10kg bag', bulk_price: 89.00, in_stock: true },
-  { id: 's4', name: 'White Sugar', category: 'other', description: 'Refined white sugar.', image_url: 'https://images.unsplash.com/photo-1621317585090-eec96eb15112?w=800&q=80', price_per_unit: 45.00, unit_type: '2.5kg bag', bulk_price: 42.00, in_stock: true },
+  { id: 's1', name: 'Tray of Eggs (30 Large)', category: 'other', description: 'Farm fresh large eggs.', image_url: '/images/tray-of-eggs.png', price_per_unit: 85.00, unit_type: 'tray', bulk_price: 80.00, in_stock: true },
+  { id: 's2', name: 'Sunflower Cooking Oil', category: 'other', description: 'Pure sunflower cooking oil, 5L.', image_url: '/images/cooking-oil.png', price_per_unit: 145.00, unit_type: '5L bottle', bulk_price: 135.00, in_stock: true },
+  { id: 's3', name: 'Super Maize Meal', category: 'other', description: 'Premium super maize meal.', image_url: '/images/maize-meal.png', price_per_unit: 95.00, unit_type: '10kg bag', bulk_price: 89.00, in_stock: true },
+  { id: 's4', name: 'White Sugar', category: 'other', description: 'Refined white sugar.', image_url: '/images/white-sugar.png', price_per_unit: 45.00, unit_type: '2.5kg bag', bulk_price: 42.00, in_stock: true },
 ];
 
 export const revalidate = 60; // Revalidate every minute
