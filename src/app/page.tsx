@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import ProductCard from '@/components/ProductCard';
+import FlowingDashboard from '@/components/FlowingDashboard';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 
@@ -107,11 +108,7 @@ export default async function Home() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {mockSpecials.map((product) => (
-            <ProductCard key={product.id} product={product} badge="Wow Special!" />
-          ))}
-        </div>
+        <FlowingDashboard products={mockSpecials} badge="Wow Special!" />
       </div>
 
       <div id="products">
