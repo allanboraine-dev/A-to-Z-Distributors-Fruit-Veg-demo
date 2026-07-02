@@ -118,9 +118,45 @@ export default function CartDrawer() {
         return;
       }
 
-      const yoco = new (window as any).YocoSDK({
-        publicKey: process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY || 'pk_test_ed3c54a6gOol69qa7fd',
-      });
+      const publicKey = process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY || 'pk_test_ed3c54a6gOol69qa7fd';
+
+      // For MVP Demo purposes: The real Yoco SDK will silently hang and fail to open the popup
+      // if passed an invalid/placeholder test key. We bypass it here to simulate success.
+      if (publicKey === 'pk_test_ed3c54a6gOol69qa7fd') {
+        toast('Simulating secure Yoco Checkout (Test Mode)...', { icon: '💳' });
+        
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: 'tok_mock_test_123',
+            amountInCents: Math.round(cartTotal * 100),
+          })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Payment failed on server');
+        }
+
+        await saveOrderToSupabase(user, 'pending');
+        toast.success('Payment successful!');
+        setOrderSuccess(true);
+        clearCart();
+        setTimeout(() => {
+          setOrderSuccess(false);
+          setIsCartOpen(false);
+        }, 3000);
+        
+        setIsSubmitting(false);
+        return;
+      }
+
+      // If a real key is provided, instantiate Yoco SDK
+      const yoco = new (window as any).YocoSDK({ publicKey });
 
       yoco.showPopup({
         amountInCents: Math.round(cartTotal * 100),
@@ -150,7 +186,6 @@ export default function CartDrawer() {
               throw new Error(data.error || 'Payment failed on server');
             }
 
-            // Payment successful! Save the order as 'paid' (or standard 'pending' dispatch)
             await saveOrderToSupabase(user, 'pending');
 
             toast.success('Payment successful!');
