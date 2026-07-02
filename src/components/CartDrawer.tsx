@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
-import { X, Minus, Plus, ShoppingBag, Loader2 } from 'lucide-react';
+import { X, Minus, Plus, ShoppingBag, Loader2, CreditCard, MessageCircle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
+import Script from 'next/script';
 import toast from 'react-hot-toast';
 
 export default function CartDrawer() {
@@ -13,78 +14,67 @@ export default function CartDrawer() {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const supabase = createClient();
 
-  const handleCheckout = async () => {
+  const saveOrderToSupabase = async (user: any, status: string = 'pending') => {
+    // Check if profile exists, and if not, create it
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, business_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    let currentBusinessName = profile?.business_name || user.user_metadata?.business_name || user.email?.split('@')[0] || 'Valued Customer';
+
+    if (!profile) {
+      await supabase.from('profiles').insert({
+        id: user.id,
+        business_name: currentBusinessName,
+        role: 'customer'
+      });
+    }
+    
+    // Insert Order
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: user.id,
+        total_amount: cartTotal,
+        status: status
+      })
+      .select()
+      .single();
+
+    if (orderError) throw orderError;
+
+    // Insert Order Items
+    const orderItems = cart.map(item => ({
+      order_id: orderData.id,
+      product_id: item.id,
+      quantity: item.quantity,
+      price_at_time: item.bulk_price && item.quantity >= 10 ? item.bulk_price : item.price_per_unit
+    }));
+
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+    if (itemsError) throw itemsError;
+
+    return { orderData, currentBusinessName };
+  };
+
+  const handleWhatsAppCheckout = async () => {
     if (cart.length === 0) return;
     
     setIsSubmitting(true);
     try {
-      // Get the authenticated user's ID
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         toast.error('Please log in to place an order.');
         setIsSubmitting(false);
         return;
       }
       
-      // Check if profile exists, and if not, create it
-      const { data: profile, error: profileCheckError } = await supabase
-        .from('profiles')
-        .select('id, business_name')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profileCheckError) {
-        console.error('Error checking profile:', profileCheckError);
-      }
-
-      let currentBusinessName = profile?.business_name || user.user_metadata?.business_name || user.email?.split('@')[0] || 'Valued Customer';
-
-      if (!profile) {
-        const { error: insertProfileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            business_name: currentBusinessName,
-            role: 'customer'
-          });
-        if (insertProfileError) {
-          console.error('Failed to create profile on checkout:', insertProfileError);
-        }
-      }
-      
-      // Insert Order
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          total_amount: cartTotal,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Insert Order Items
-      const orderItems = cart.map(item => ({
-        order_id: orderData.id,
-        product_id: item.id,
-        quantity: item.quantity,
-        price_at_time: item.bulk_price && item.quantity >= 10 ? item.bulk_price : item.price_per_unit
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
+      const { orderData, currentBusinessName } = await saveOrderToSupabase(user, 'pending');
 
       // Generate WhatsApp Message
-      let message = `*New Wholesale Order*\n`;
-      message += `From: ${currentBusinessName}\n`;
-      message += `Order ID: #${orderData.id.slice(0, 8)}\n\n`;
-      message += `*Items:*\n`;
+      let message = `*New Wholesale Order*\nFrom: ${currentBusinessName}\nOrder ID: #${orderData.id.slice(0, 8)}\n\n*Items:*\n`;
       cart.forEach(item => {
         const price = item.bulk_price && item.quantity >= 10 ? item.bulk_price : item.price_per_unit;
         message += `- ${item.quantity}x ${item.name} (R${price.toFixed(2)})\n`;
@@ -94,28 +84,92 @@ export default function CartDrawer() {
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/27822531954?text=${encodedMessage}`;
       
-      // Redirect directly to bypass popup blockers after async operations
       window.location.href = whatsappUrl;
 
       setOrderSuccess(true);
       clearCart();
-      
-      // Close drawer after 3 seconds on success
       setTimeout(() => {
         setOrderSuccess(false);
         setIsCartOpen(false);
       }, 3000);
 
     } catch (error: any) {
-      console.error('Error during checkout details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        error: error
-      });
       toast.error(`Checkout failed: ${error?.message || 'Please try again or login if required.'}`);
     } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleYocoCheckout = async () => {
+    if (cart.length === 0) return;
+    
+    if (!(window as any).YocoSDK) {
+      toast.error('Payment system is loading, please wait.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Please log in to place an order.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const yoco = new (window as any).YocoSDK({
+        publicKey: process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY || 'pk_test_ed3c54a6gOol69qa7fd',
+      });
+
+      yoco.showPopup({
+        amountInCents: Math.round(cartTotal * 100),
+        currency: 'ZAR',
+        name: 'A to Z Distributors',
+        description: 'Wholesale Order',
+        callback: async function (result: any) {
+          if (result.error) {
+            toast.error(result.error.message || 'Payment cancelled or failed');
+            setIsSubmitting(false);
+            return;
+          }
+
+          try {
+            const response = await fetch('/api/checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: result.id,
+                amountInCents: Math.round(cartTotal * 100),
+              })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || 'Payment failed on server');
+            }
+
+            // Payment successful! Save the order as 'paid' (or standard 'pending' dispatch)
+            await saveOrderToSupabase(user, 'pending');
+
+            toast.success('Payment successful!');
+            setOrderSuccess(true);
+            clearCart();
+            
+            setTimeout(() => {
+              setOrderSuccess(false);
+              setIsCartOpen(false);
+            }, 3000);
+
+          } catch (apiError: any) {
+            toast.error(apiError.message || 'Error processing payment');
+            setIsSubmitting(false);
+          }
+        }
+      });
+    } catch (error: any) {
+      toast.error('Error starting checkout: ' + error.message);
       setIsSubmitting(false);
     }
   };
@@ -124,6 +178,9 @@ export default function CartDrawer() {
 
   return (
     <>
+      {/* Yoco Web SDK */}
+      <Script src="https://js.yoco.com/sdk/v1/yoco-sdk-web.js" strategy="lazyOnload" />
+
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity"
@@ -216,22 +273,40 @@ export default function CartDrawer() {
               <span className="font-medium text-gray-600">Total</span>
               <span className="font-bold text-gray-900 text-2xl">R{cartTotal.toFixed(2)}</span>
             </div>
-            <button
-              onClick={handleCheckout}
-              disabled={isSubmitting}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
-            >
-              {isSubmitting ? (
-                <>
+            <div className="space-y-3">
+              <button
+                onClick={handleYocoCheckout}
+                disabled={isSubmitting}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg shadow-emerald-600/20"
+              >
+                {isSubmitting ? (
                   <Loader2 className="animate-spin" size={20} />
-                  Processing...
-                </>
-              ) : (
-                'Place Order'
-              )}
-            </button>
-            <p className="text-xs text-center text-gray-500">
-              By placing this order, you agree to our wholesale terms of service.
+                ) : (
+                  <>
+                    <CreditCard size={20} />
+                    Pay Online (Yoco)
+                  </>
+                )}
+              </button>
+              
+              <div className="relative flex items-center py-2">
+                <div className="flex-grow border-t border-gray-200"></div>
+                <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR</span>
+                <div className="flex-grow border-t border-gray-200"></div>
+              </div>
+
+              <button
+                onClick={handleWhatsAppCheckout}
+                disabled={isSubmitting}
+                className="w-full bg-white hover:bg-gray-50 text-emerald-600 border-2 border-emerald-600 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                <MessageCircle size={20} />
+                Order via WhatsApp
+              </button>
+            </div>
+            
+            <p className="text-xs text-center text-gray-500 pt-2">
+              By placing this order, you agree to our wholesale terms of service. Secure payments powered by Yoco.
             </p>
           </div>
         )}
