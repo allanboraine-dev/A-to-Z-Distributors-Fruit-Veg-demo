@@ -25,7 +25,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedCart = localStorage.getItem('atoz_cart');
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        const parsedCart = JSON.parse(savedCart);
+        // Filter out any stale cart items that don't have valid UUIDs
+        const validCart = parsedCart.filter((item: CartItem) => 
+          item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
+        );
+        setCart(validCart);
       } catch (e) {
         console.error("Failed to parse cart", e);
       }

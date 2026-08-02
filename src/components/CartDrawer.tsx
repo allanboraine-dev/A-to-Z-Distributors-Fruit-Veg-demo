@@ -7,11 +7,14 @@ import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
 import Script from 'next/script';
 import toast from 'react-hot-toast';
+import SimulatedYocoModal from './SimulatedYocoModal';
 
 export default function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [showSimulationModal, setShowSimulationModal] = useState(false);
+  const [simulationUser, setSimulationUser] = useState<any>(null);
   const supabase = createClient();
 
   const saveOrderToSupabase = async (user: any, status: string = 'pending') => {
@@ -45,8 +48,16 @@ export default function CartDrawer() {
 
     if (orderError) throw orderError;
 
+    // Filter out invalid UUIDs to prevent checkout crash from stale mock items
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validCartItems = cart.filter(item => item.id && uuidRegex.test(item.id));
+
+    if (validCartItems.length === 0) {
+      throw new Error("No valid products in cart to checkout.");
+    }
+
     // Insert Order Items
-    const orderItems = cart.map(item => ({
+    const orderItems = validCartItems.map(item => ({
       order_id: orderData.id,
       product_id: item.id,
       quantity: item.quantity,
@@ -103,11 +114,6 @@ export default function CartDrawer() {
   const handleYocoCheckout = async () => {
     if (cart.length === 0) return;
     
-    if (!(window as any).YocoSDK) {
-      toast.error('Payment system is loading, please wait.');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -118,93 +124,47 @@ export default function CartDrawer() {
         return;
       }
 
-      const publicKey = process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY || 'pk_test_ed3c54a6gOol69qa7fd';
-
-      // For MVP Demo purposes: The real Yoco SDK will silently hang and fail to open the popup
-      // if passed an invalid/placeholder test key. We bypass it here to simulate success.
-      if (publicKey === 'pk_test_ed3c54a6gOol69qa7fd') {
-        toast('Simulating secure Yoco Checkout (Test Mode)...', { icon: '💳' });
-        
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const response = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: 'tok_mock_test_123',
-            amountInCents: Math.round(cartTotal * 100),
-          })
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || 'Payment failed on server');
-        }
-
-        await saveOrderToSupabase(user, 'pending');
-        toast.success('Payment successful!');
-        setOrderSuccess(true);
-        clearCart();
-        setTimeout(() => {
-          setOrderSuccess(false);
-          setIsCartOpen(false);
-        }, 3000);
-        
-        setIsSubmitting(false);
-        return;
-      }
-
-      // If a real key is provided, instantiate Yoco SDK
-      const yoco = new (window as any).YocoSDK({ publicKey });
-
-      yoco.showPopup({
-        amountInCents: Math.round(cartTotal * 100),
-        currency: 'ZAR',
-        name: 'A to Z Distributors',
-        description: 'Wholesale Order',
-        callback: async function (result: any) {
-          if (result.error) {
-            toast.error(result.error.message || 'Payment cancelled or failed');
-            setIsSubmitting(false);
-            return;
-          }
-
-          try {
-            const response = await fetch('/api/checkout', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                token: result.id,
-                amountInCents: Math.round(cartTotal * 100),
-              })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-              throw new Error(data.error || 'Payment failed on server');
-            }
-
-            await saveOrderToSupabase(user, 'pending');
-
-            toast.success('Payment successful!');
-            setOrderSuccess(true);
-            clearCart();
-            
-            setTimeout(() => {
-              setOrderSuccess(false);
-              setIsCartOpen(false);
-            }, 3000);
-
-          } catch (apiError: any) {
-            toast.error(apiError.message || 'Error processing payment');
-            setIsSubmitting(false);
-          }
-        }
-      });
+      // Always force the simulated payment window for demo purposes
+      setSimulationUser(user);
+      setShowSimulationModal(true);
+      return;
     } catch (error: any) {
       toast.error('Error starting checkout: ' + error.message);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSimulatedSuccess = async (token: string) => {
+    setShowSimulationModal(false);
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          amountInCents: Math.round(cartTotal * 100),
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Payment failed on server');
+      }
+
+      await saveOrderToSupabase(simulationUser, 'pending');
+      toast.success('Payment successful!');
+      setOrderSuccess(true);
+      clearCart();
+      setTimeout(() => {
+        setOrderSuccess(false);
+        setIsCartOpen(false);
+      }, 3000);
+      
+    } catch (error: any) {
+      toast.error('Error processing payment: ' + error.message);
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -346,6 +306,18 @@ export default function CartDrawer() {
           </div>
         )}
       </div>
+
+      {/* Simulated Yoco Payment Modal */}
+      {showSimulationModal && (
+        <SimulatedYocoModal 
+          amountInCents={Math.round(cartTotal * 100)}
+          onSuccess={handleSimulatedSuccess}
+          onCancel={() => {
+            setShowSimulationModal(false);
+            setIsSubmitting(false);
+          }}
+        />
+      )}
     </>
   );
 }
